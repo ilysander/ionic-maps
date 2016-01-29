@@ -1,10 +1,11 @@
 // Ionic Starter App
 var nomToken = "imu0gnn79m74o39u53jfrr6klk";
-var serviceTrack = "http://localhost:8080/trackgps/track/simuladorProgramacion?codIdRuta=1&fecProgramacion=20121011&nomToken="+nomToken;
+var serviceTrack = "http://192.168.1.36:8080/trackgps/track/simuladorProgramacion?codIdRuta=1&fecProgramacion=20121011&nomToken="+nomToken;
+var gpsclient = "http://192.168.1.36:4000";
 // angular.module is a global place for creating, registering and retrieving Angular modules
 // 'starter' is the name of this angular module example (also set in a <body> attribute in index.html)
 // the 2nd parameter is an array of 'requires'
-angular.module('starter', ['ionic', 'ngCordova'])
+angular.module('starter', ['ionic', 'ngCordova','btford.socket-io'])
 
   .run(function ($ionicPlatform,GoogleMaps) {
     $ionicPlatform.ready(function () {
@@ -52,7 +53,16 @@ angular.module('starter', ['ionic', 'ngCordova'])
       }
     }
   })
-  .factory('GoogleMaps',function ($cordovaGeolocation,Markers) {
+  .factory('SocketConection',function (socketFactory) {
+    var myIoSocketWeb = io.connect(gpsclient);
+    
+    mySocket = socketFactory({
+      ioSocket:myIoSocketWeb
+    });
+    
+    return myIoSocketWeb;
+  })
+  .factory('GoogleMaps',function ($cordovaGeolocation,Markers,SocketConection) {
     var apiKey = false;
     var map = null;
     
@@ -82,6 +92,39 @@ angular.module('starter', ['ionic', 'ngCordova'])
       });
     }
     
+    SocketConection.on('track',function (data) {
+      console.log(data);
+      console.log('socket track');
+      var records = data;//.data.result;
+        
+        for (var i = 0; i < records.length; i++) {
+         var record = records[i];
+         updateMarker(record);
+        }
+    });
+    
+    SocketConection.on('actualizarRemotoTrack',function(data){
+			console.log(data);
+			SocketConection.emit('track', function(respuesta){
+				console.log(respuesta);
+         
+			});
+			// console.log('actualizarRemotoTrack');
+		})
+    
+    var listaMarks = [];
+    
+    function updateMarker(record) {
+      for (var i = 0; i < listaMarks.length; i++) {
+         // var record = records[i];
+         if (listaMarks[i].codIdDispotivo == record.codIdDispotivo) {
+           console.log('actualiza posicion');
+           var newLatLng = new google.maps.LatLng(record.nomLatitud,record.numLongitud);
+           listaMarks[i].setPosition(newLatLng);
+           break;
+         }
+        }
+    }
     function loadMarkers() {
       Markers.getMarkers().then(function (markers) {
         // console.log(markers);
@@ -98,7 +141,8 @@ angular.module('starter', ['ionic', 'ngCordova'])
            animation: google.maps.Animation.DROP,
            position:markerPos
          });
-         
+         marker.codIdDispotivo = record.codIdDispotivo;
+         listaMarks.push(marker);
          var infoWindowContent = "<h4>"+record.codIdOperador+"</h4>";
           addInfoWindow(marker,infoWindowContent,record);
         }
