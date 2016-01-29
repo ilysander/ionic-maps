@@ -1,11 +1,12 @@
 // Ionic Starter App
-
+var nomToken = "imu0gnn79m74o39u53jfrr6klk";
+var serviceTrack = "http://localhost:8080/trackgps/track/simuladorProgramacion?codIdRuta=1&fecProgramacion=20121011&nomToken="+nomToken;
 // angular.module is a global place for creating, registering and retrieving Angular modules
 // 'starter' is the name of this angular module example (also set in a <body> attribute in index.html)
 // the 2nd parameter is an array of 'requires'
 angular.module('starter', ['ionic', 'ngCordova'])
 
-  .run(function ($ionicPlatform) {
+  .run(function ($ionicPlatform,GoogleMaps) {
     $ionicPlatform.ready(function () {
       if (window.cordova && window.cordova.plugins.Keyboard) {
         // Hide the accessory bar by default (remove this to show the accessory bar above the keyboard
@@ -20,6 +21,8 @@ angular.module('starter', ['ionic', 'ngCordova'])
       if (window.StatusBar) {
         StatusBar.styleDefault();
       }
+      
+      GoogleMaps.init();
     });
   })
 
@@ -32,38 +35,125 @@ angular.module('starter', ['ionic', 'ngCordova'])
       });
     $urlRouterProvider.otherwise("/");
   })
-  .controller('MapCtrl', function ($scope, $state, $cordovaGeolocation) {
-    var options = { timeout: 10000, enableHighAccuracy: true };
-
-    $cordovaGeolocation.getCurrentPosition(options).then(function (position) {
-      var latLng = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
-
-      var mapOptions = {
-        center: latLng,
-        zoom: 15,
-        mapTypeId: google.maps.MapTypeId.ROADMAP
-      };
-
-      $scope.map = new google.maps.Map(document.getElementById("map"), mapOptions);
+  .factory('Markers',function ($http) {
+    var markers = [];
+    
+    return{
+      getMarkers:function () {
+        return $http.get(serviceTrack).then(function (response) {
+          console.log('respuesta getMarkers');
+          markers = response.data.objRespuesta;
+          console.log(response);
+          return markers;
+        });
+      },
+      getMarker:function (id) {
+        console.log('respuesta getMarker(id)');
+      }
+    }
+  })
+  .factory('GoogleMaps',function ($cordovaGeolocation,Markers) {
+    var apiKey = false;
+    var map = null;
+    
+    function initMap() {
+      var options = {timeout:10000,enableHighAccuracy:true};
       
-      google.maps.event.addListenerOnce($scope.map,'idle',function () {
-        var marker = new google.maps.Marker({
-          map:$scope.map,
-          animation:google.maps.Animation.DROP,
-          position:latLng
+      $cordovaGeolocation.getCurrentPosition(options)
+      .then(function (position) {
+        var latLng = new google.maps.LatLng(position.coords.latitude,position.coords.longitude);
+        var mapOptions = {
+          center:latLng,
+          zoom:15,
+          mapTypeId:google.maps.MapTypeId.ROADMAP
+        };
+        //http://stackoverflow.com/questions/28280738/update-only-markers-in-google-maps
+        map = new google.maps.Map(document.getElementById("map"),mapOptions);
+        
+        //esperamos que carge el map
+        google.maps.event.addListenerOnce(map,'idle',function () {
+          loadMarkers();
         });
         
-        var infoWindow = new google.maps.InfoWindow({
-          content:"Estoy aqui!"
-        });
-        
-        google.maps.event.addListener(marker,'click',function () {
-          infoWindow.open($scope.map,marker);
-        });
-        
+      
+      },function (error) {
+        console.log("no se puede obtener posiciones");
+        loadMarkers();
       });
-
-    }, function (error) {
-      console.log("No se puede obtener la locacion");
-    });
+    }
+    
+    function loadMarkers() {
+      Markers.getMarkers().then(function (markers) {
+        // console.log(markers);
+        
+        var records = markers;//.data.result;
+        
+        for (var i = 0; i < records.length; i++) {
+         var record = records[i];
+         var markerPos = new google.maps.LatLng(record.nomLatitud,record.numLongitud);
+         
+         //agregar el marker
+         var marker = new google.maps.Marker({
+           map:map,
+           animation: google.maps.Animation.DROP,
+           position:markerPos
+         });
+         
+         var infoWindowContent = "<h4>"+record.codIdOperador+"</h4>";
+          addInfoWindow(marker,infoWindowContent,record);
+        }
+      });
+    }
+    
+    function addInfoWindow(marker,message,record) {
+      var infoWindow = new google.maps.InfoWindow({
+        content:message
+      });
+      
+      google.maps.event.addListener(marker,'click',function () {
+        infoWindow.open(map,marker);
+      });
+    }
+    
+    return{
+      init:function () {
+        initMap();
+      }
+    }
+  })
+  .controller('MapCtrl', function ($scope, $state, $cordovaGeolocation) {
+//     console.log(Markers.getMarkers());
+//     var options = { timeout: 10000, enableHighAccuracy: true };
+// 
+//     $cordovaGeolocation.getCurrentPosition(options).then(function (position) {
+//       var latLng = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
+// 
+//       var mapOptions = {
+//         center: latLng,
+//         zoom: 15,
+//         mapTypeId: google.maps.MapTypeId.ROADMAP
+//       };
+// 
+//       $scope.map = new google.maps.Map(document.getElementById("map"), mapOptions);
+//       
+//       google.maps.event.addListenerOnce($scope.map,'idle',function () {
+//         var marker = new google.maps.Marker({
+//           map:$scope.map,
+//           animation:google.maps.Animation.DROP,
+//           position:latLng
+//         });
+//         
+//         var infoWindow = new google.maps.InfoWindow({
+//           content:"Estoy aqui!"
+//         });
+//         
+//         google.maps.event.addListener(marker,'click',function () {
+//           infoWindow.open($scope.map,marker);
+//         });
+//         
+//       });
+// 
+//     }, function (error) {
+//       console.log("No se puede obtener la locacion");
+//     });
   });
