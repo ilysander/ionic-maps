@@ -1,7 +1,7 @@
 // Ionic Starter App
 var nomToken = "imu0gnn79m74o39u53jfrr6klk";
 var ipservidor ="http://181.177.243.94";//servidor
-// var ipservidor ="http://192.168.1.36";//local
+// var ipservidor ="http://192.168.1.36:3000";//local
 var serviceTrack = ipservidor+"/listaTracks";
 var gpsclient = ipservidor;//+":3000";
 // angular.module is a global place for creating, registering and retrieving Angular modules
@@ -127,6 +127,7 @@ angular.module('starter', ['ionic', 'ngCordova','btford.socket-io'])
          }
         }
     }
+    
     function loadMarkers() {
       Markers.getMarkers().then(function (markers) {
         // console.log(markers);
@@ -151,6 +152,17 @@ angular.module('starter', ['ionic', 'ngCordova','btford.socket-io'])
       });
     }
     
+    function updateMarkersXService() {
+      console.log('updateMarkersXService');
+      Markers.getMarkers().then(function (markers) {
+        var records = markers;//.data.result;
+        for (var i = 0; i < records.length; i++) {
+         var record = records[i];
+         updateMarker(record);
+        }
+      });
+    }
+    
     function addInfoWindow(marker,message,record) {
       var infoWindow = new google.maps.InfoWindow({
         content:message
@@ -164,10 +176,18 @@ angular.module('starter', ['ionic', 'ngCordova','btford.socket-io'])
     return{
       init:function () {
         initMap();
+      },
+      updateMarkersXService:function () {
+        updateMarkersXService();
       }
     }
   })
-  .controller('MapCtrl', function ($scope, $state, $cordovaGeolocation) {
+  .controller('MapCtrl', function ($scope, $state, $cordovaGeolocation,GoogleMaps) {
+    $scope.actualizarMarkers = function () {
+      console.log('entra controller');
+      GoogleMaps.updateMarkersXService();
+    };
+    
 //     console.log(Markers.getMarkers());
 //     var options = { timeout: 10000, enableHighAccuracy: true };
 // 
