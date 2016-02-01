@@ -1,14 +1,16 @@
 // Ionic Starter App
 var nomToken = "imu0gnn79m74o39u53jfrr6klk";
 var ipservidor ="http://181.177.243.94";//servidor
-// var ipservidor ="http://192.168.1.36:3000";//local
+var isProduction =false;
+if (!isProduction) {
+    ipservidor ="http://localhost:3000";//local
+}
 var serviceTrack = ipservidor+"/listaTracks";
 var gpsclient = ipservidor;//+":3000";
 // angular.module is a global place for creating, registering and retrieving Angular modules
 // 'starter' is the name of this angular module example (also set in a <body> attribute in index.html)
 // the 2nd parameter is an array of 'requires'
 angular.module('starter', ['ionic', 'ngCordova','btford.socket-io'])
-
   .run(function ($ionicPlatform,GoogleMaps) {
     $ionicPlatform.ready(function () {
       if (window.cordova && window.cordova.plugins.Keyboard) {
@@ -69,10 +71,11 @@ angular.module('starter', ['ionic', 'ngCordova','btford.socket-io'])
     var map = null;
     
     function initMap() {
-      var options = {timeout:10000,enableHighAccuracy:true};
-      
+      var options = {timeout:10000, maximumAge: 90000,enableHighAccuracy:false};
+      console.log('iniciando mapa');
       $cordovaGeolocation.getCurrentPosition(options)
       .then(function (position) {
+        console.log(position);
         var latLng = new google.maps.LatLng(position.coords.latitude,position.coords.longitude);
         var mapOptions = {
           center:latLng,
@@ -130,7 +133,7 @@ angular.module('starter', ['ionic', 'ngCordova','btford.socket-io'])
     
     function loadMarkers() {
       Markers.getMarkers().then(function (markers) {
-        // console.log(markers);
+        console.log(markers);
         
         var records = markers;//.data.result;
         
