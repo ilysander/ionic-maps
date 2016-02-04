@@ -1,7 +1,8 @@
 // Ionic Starter App
-var nomToken = "imu0gnn79m74o39u53jfrr6klk";
+var nomToken = "di7j787f2111hkv5m8n03gnr2c";
 var ipservidor ="http://181.177.243.94";//servidor
-var isProduction =false;
+var isProduction =true;
+var usuarioTrack;
 if (!isProduction) {
     ipservidor ="http://localhost:3000";//local
 }
@@ -88,6 +89,7 @@ angular.module('starter', ['ionic', 'ngCordova','btford.socket-io'])
         //esperamos que carge el map
         google.maps.event.addListenerOnce(map,'idle',function () {
           loadMarkers();
+          
         });
         
       
@@ -96,6 +98,12 @@ angular.module('starter', ['ionic', 'ngCordova','btford.socket-io'])
         loadMarkers();
       });
     }
+    
+    // SocketConection.on('secureTrack',function (usuario) {
+    //   console.log(usuario);
+    //   usuarioTrack = usuario;
+    //   SocketConection.emit('inciarLiveLoad',usuario);
+    // });
     
     SocketConection.on('track',function (data) {
       console.log(data);
@@ -152,6 +160,13 @@ angular.module('starter', ['ionic', 'ngCordova','btford.socket-io'])
          var infoWindowContent = "<h4>"+record.codIdOperador+"</h4>";
           addInfoWindow(marker,infoWindowContent,record);
         }
+        
+        var token = {"nomToken":nomToken};
+          console.log("loginTrack");
+          SocketConection.emit('loginTrack',token, function(respuesta){
+              console.log(respuesta);
+              
+            });
       });
     }
     
